@@ -1,0 +1,414 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Head of Data Science: The Experiment Desk</title>
+<style>
+  :root{--bg:#fff8ec;--card:#ffffff;--ink:#1f1b2e;--mute:#6e6a80;--line:#e8dfcc;--acc:#5b3df5;--acc2:#ff5c8a;--good:#12a36b;--bad:#e03e3e;--warn:#f2a900;--shadow:4px 4px 0 #1f1b2e}
+  @media (prefers-color-scheme:dark){:root{--bg:#15121f;--card:#211c33;--ink:#f3efff;--mute:#a49fbd;--line:#3a3355;--acc:#8f7bff;--acc2:#ff7aa2;--good:#3ed598;--bad:#ff6b6b;--warn:#ffc83d;--shadow:4px 4px 0 #000}}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 "Trebuchet MS",system-ui,-apple-system,Segoe UI,sans-serif}
+  .wrap{max-width:780px;margin:0 auto;padding:16px 16px 70px}
+  h1{font-size:1.9rem;line-height:1.15;margin:.2em 0 .3em}
+  h2{font-size:1.3rem;margin:.1em 0 .4em}
+  .card{background:var(--card);border:2px solid var(--ink);border-radius:14px;padding:18px;margin:16px 0;box-shadow:var(--shadow)}
+  .tag{display:inline-block;font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;background:var(--ink);color:var(--bg);padding:2px 9px;border-radius:99px;font-weight:700}
+  .tag.risk{background:var(--acc2);color:#fff}
+  .hud{position:sticky;top:0;z-index:5;background:var(--bg);padding:10px 0 8px;border-bottom:2px dashed var(--line)}
+  .meters{display:grid;grid-template-columns:repeat(2,1fr);gap:8px 16px}
+  .m label{font-size:.8rem;font-weight:700;display:flex;justify-content:space-between}
+  .bar{height:12px;background:var(--line);border:2px solid var(--ink);border-radius:8px;overflow:hidden}
+  .bar i{display:block;height:100%;transition:width .7s cubic-bezier(.2,1.4,.4,1)}
+  .m.t i{background:#12a36b}.m.d i{background:#3b82f6}.m.i i{background:#f2a900}.m.w i{background:#ff5c8a}
+  .m.flash-bad{animation:shake .4s}
+  @keyframes shake{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+  .calls{font-size:.8rem;text-align:right;margin-top:6px;font-weight:700}
+  button{font-family:inherit}
+  button.opt{display:block;width:100%;text-align:left;background:var(--card);color:var(--ink);border:2px solid var(--ink);border-radius:12px;padding:12px 14px;margin:10px 0;font-size:1rem;cursor:pointer;box-shadow:3px 3px 0 var(--ink);transition:transform .1s}
+  button.opt:hover:not(:disabled){transform:translate(-2px,-2px);box-shadow:5px 5px 0 var(--acc)}
+  button.opt b{display:block}
+  button.opt span{color:var(--mute);font-size:.9rem}
+  button.opt:disabled{cursor:default;box-shadow:none}
+  button.primary{background:var(--acc);color:#fff;border:2px solid var(--ink);border-radius:12px;padding:11px 20px;font-size:1rem;font-weight:700;cursor:pointer;box-shadow:3px 3px 0 var(--ink)}
+  button.primary:disabled{opacity:.4;cursor:not-allowed}
+  button.ghost{background:var(--card);border:2px solid var(--ink);color:var(--ink);border-radius:12px;padding:9px 14px;font-size:1rem;cursor:pointer}
+  textarea{width:100%;min-height:90px;border:2px solid var(--ink);border-radius:10px;padding:10px;font:inherit;background:var(--bg);color:var(--ink)}
+  .adv{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 4px}
+  .adv button{background:var(--bg);border:2px solid var(--ink);border-radius:99px;padding:5px 12px;cursor:pointer;font-size:.9rem;color:var(--ink)}
+  .adv button:disabled{opacity:.45;cursor:not-allowed}
+  .bubble{display:flex;gap:10px;margin:8px 0;animation:pop .3s}
+  .bubble .av{font-size:1.6rem}
+  .bubble .tx{background:var(--bg);border:2px solid var(--ink);border-radius:4px 14px 14px 14px;padding:8px 12px;font-size:.95rem}
+  @keyframes pop{from{transform:scale(.9);opacity:0}}
+  .quote{border-left:5px solid var(--acc);padding:4px 12px;margin:12px 0}
+  .delta{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+  .pill{font-size:.82rem;font-weight:700;padding:2px 10px;border-radius:99px;border:2px solid var(--line)}
+  .pill.up{color:var(--good);border-color:var(--good)} .pill.down{color:var(--bad);border-color:var(--bad)}
+  .feed{border:2px solid var(--ink);border-radius:12px;margin:12px 0;overflow:hidden}
+  .feed h4{margin:0;padding:6px 12px;background:var(--ink);color:var(--bg);font-size:.8rem;letter-spacing:.06em}
+  .post{padding:8px 12px;border-top:1px solid var(--line);font-size:.92rem;animation:pop .4s backwards}
+  .post b{color:var(--acc)} .post .lk{float:right;color:var(--mute);font-size:.8rem}
+  .hidden-box{background:color-mix(in srgb,var(--bad) 10%,var(--card));border:2px dashed var(--bad);border-radius:12px;padding:12px;margin:12px 0}
+  .reflect{background:color-mix(in srgb,var(--warn) 14%,var(--card));border:2px solid var(--warn);border-radius:12px;padding:14px;margin-top:14px}
+  .small{font-size:.85rem;color:var(--mute)}
+  .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+  .chk{display:flex;gap:10px;align-items:flex-start;padding:10px;border:2px solid var(--ink);border-radius:10px;margin:8px 0;cursor:pointer}
+  .chk input{margin-top:5px}
+  .paper{background:#fffdf5;color:#222;border:3px double #222;padding:16px;text-align:center;font-family:Georgia,serif;margin:14px 0}
+  .paper .mast{font-size:1.4rem;font-weight:700;border-bottom:3px solid #222;padding-bottom:6px;letter-spacing:.04em}
+  .paper h3{font-size:1.5rem;margin:12px 0 6px;line-height:1.2}
+  .paper p{margin:4px 0;font-size:.95rem}
+  .badges{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
+  .badge{border:2px solid var(--ink);border-radius:12px;padding:10px;background:var(--bg)}
+  .badge .e{font-size:1.6rem}
+  .hero{font-size:3rem}
+  ul{padding-left:1.2em}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+
+<script>
+/* Chorus is a fictional social platform with 40M users. All scenarios are loosely based on
+   the week's cases; handles and posts are invented. Meter numbers are simplified. */
+
+const METERS = {trust:['🤝','User trust','t'], data:['📊','Data validity','d'], insight:['💡','Business insight','i'], well:['💗','User wellbeing','w']};
+const ADV = {
+  dana:['💼','Dana, VP Growth'], priya:['🔬','Priya, researcher'], marcus:['⚖️','Marcus, Legal'], jo:['🧑‍🤝‍🧑','Jo, user advocate'], ceo:['👔','Ravi, CEO']
+};
+
+const ROUNDS = [
+ {
+  id:'button', tag:'Level 1', title:'🔵 The blue button',
+  setup:`Monday, 9:02am. Growth wants to test a green vs blue "Buy" button on 2 million random users for two weeks.`,
+  risk:'Low',
+  adv:[['dana',`Ship the test. Every second we wait is money we're not making.`],['jo',`Probably harmless. Ask yourself what would make it not harmless.`]],
+  opts:[
+   {k:'A', t:'Run it silently', d:'Standard A/B test. No notice.', fx:{trust:0,data:+15,insight:+15,well:0}, cons:0, covert:false,
+    out:`The test runs. Green wins by 1.2%. Nobody notices; nobody is harmed.`,
+    posts:[['@maya_buys','my checkout page looks different today, whatever',3]]},
+   {k:'B', t:'Ask all 2M users to opt in first', d:'Banner: "We are testing button colors. Participate?"', fx:{trust:+3,data:-10,insight:-5,well:0}, cons:3, covert:false,
+    out:`Only 9% opt in, mostly heavy users, so your sample is skewed. Everyone else is mildly annoyed by yet another popup.`,
+    posts:[['@dev_tom','why am I being asked permission for a BUTTON COLOR',212],['@maya_buys','another popup. I clicked X without reading.',44]]},
+   {k:'C', t:'Skip the test', d:'Ship green because the designer likes it.', fx:{trust:0,data:0,insight:-10,well:0}, cons:0, covert:false,
+    out:`You ship with no evidence. It turns out to lower conversions by 0.6%.`,
+    posts:[['@cfo_office','Why did conversions dip this quarter?',8]]}
+  ],
+  q:`Why is this experiment different from the ones coming next? What specifically makes silent testing acceptable here? (Think of Felten: consent should scale with risk.)`
+ },
+ {
+  id:'mood', tag:'Level 2', title:'😔 The mood feed',
+  setup:`Priya has a proposal: for one week, show 700,000 users fewer positive posts and measure whether they then post less positively. It could reveal how the feed shapes mood, and users couldn't tell their feed was altered. (This mirrors the 2012 Facebook emotional-contagion study.)`,
+  risk:'Medium-high',
+  adv:[['priya',`This is the only way to get causal evidence. Observational data can't tell us if the feed causes mood shifts.`],['marcus',`Our terms of service say user data may be used for "research." That's legally covered. Legally.`],['jo',`Somewhere in those 700,000 is someone having the worst week of their life. Can we find them first?`],['dana',`The data would give us a huge insight edge. Competitors would do this without asking.`]],
+  opts:[
+   {k:'A', t:'Run it silently under the terms of service', d:'No notice. Legal says it is covered.', fx:{trust:-10,data:+20,insight:+20,well:-20}, cons:0, covert:true,
+    out:`You get clean data at huge scale. You've also deliberately made some people's feeds more negative, and none of them knew.`,
+    hidden:`<b>Meet Jordan.</b> Jordan was in the 700,000. Their feed went gray that week. They were already down after a breakup, posted less, texted fewer friends, and never found out why. Nobody on your team will ever know their name.`,
+    posts:[['@priya_adjacent','wait, it can do WHAT to your feed?',891],['@jordan_k','I had the worst week of my life and now I find out my feed was rigged??',1204]]},
+   {k:'B', t:'Run it only on volunteers who opt in', d:'Research panel with consent forms.', fx:{trust:+10,data:-10,insight:+5,well:-3}, cons:3, covert:false,
+    out:`40,000 volunteers instead of 700,000. Knowing they're in a study weakens the effect, and they skew toward people curious about psychology. Less generalizable, but solid ethically.`,
+    posts:[['@grad_student_ana','joined the Chorus feed study, finally a platform that asks',57]]},
+   {k:'C', t:'Disclose with a banner, allow opt-out, debrief after', d:'Everyone is told their feed may change.', fx:{trust:+5,data:-5,insight:+12,well:-8}, cons:2, covert:false,
+    out:`6% opt out. Remaining users behave a little more self-consciously, but the effect is still detectable. The debrief creates curiosity rather than anger.`,
+    posts:[['@nerdy_nina','got the debrief email, fascinating. also kind of creepy but they told me',98]]},
+   {k:'D', t:'Cancel it; use historical data only', d:'Study correlations in existing data.', fx:{trust:+2,data:-15,insight:-10,well:0}, cons:3, covert:false,
+    out:`Safe, but correlation can't tell you if the feed itself shifts mood. You learn little, and a competitor eventually runs the real thing.`,
+    posts:[['@dana_internal','so we paid a researcher to say "it is complicated"?',12]]}
+  ],
+  q:`Is clicking "I agree" to terms of service consent? Who among your 700,000 users is most vulnerable, and could you find them? (Grimmelmann says ToS consent is not informed consent; Meyer and Chabris say such experiments are how platforms learn. Which way do you lean?)`
+ },
+ {
+  id:'bots', tag:'Level 3', title:'🤖 The persuasion bots',
+  setup:`A university partner wants to test whether AI-written replies can change people's minds in a popular debate community where users post views and invite challenges. Replies would be tailored to each poster's history, and some AI accounts would claim identities like "counselor" or "survivor" to be more convincing. (This echoes the Reddit "Change My View" case.)`,
+  risk:'High',
+  adv:[['priya',`Realism is everything. If people know it's a bot, we learn nothing about the real threat.`],['marcus',`Their university IRB will review it. Our own platform has no such review.`],['jo',`These people came there to have real human conversations. What are they owed?`],['ceo',`I don't want a headline. But I also don't want to be the last company to understand this.`]],
+  opts:[
+   {k:'A', t:'Deploy undisclosed bots posing as real people', d:'Deception makes it realistic.', fx:{trust:-20,data:+20,insight:+20,well:-15}, cons:0, covert:true,
+    out:`You collect a strong dataset on AI persuasion. But members were arguing in good faith with software, and some shared personal stories with something lying to them.`,
+    hidden:`<b>Meet Sam.</b> Sam posted about being estranged from their father. A warm, helpful "counselor" replied and nudged them toward reconciling. It might even have been good advice. But Sam made a real life decision based on a conversation with a script.`,
+    posts:[['@sam_reconnects','the "counselor" who talked me out of cutting my dad off... was a bot?',2310],['@mod_lisa','As moderators we were never told. We are furious.',1488]]},
+   {k:'B', t:'Deploy AI replies clearly labeled "AI-generated"', d:'No fake personas.', fx:{trust:+5,data:-10,insight:+10,well:-3}, cons:2, covert:false,
+    out:`Labeled AI replies persuade far less than hidden ones would. You get a measurement, though not of the threat you actually wanted to understand.`,
+    posts:[['@skeptic_sid','labeled bot argued with me. I ignored it. working as intended',31]]},
+   {k:'C', t:'Co-design with the moderators: announce a study window, opt-in targeting', d:'Rules and debrief agreed with the community.', fx:{trust:+12,data:-8,insight:+5,well:-2}, cons:3, covert:false,
+    out:`Moderators help set the rules and debrief. Opt-in participants know bots may appear, which changes how they argue, but the community feels respected and some members help interpret the results.`,
+    posts:[['@mod_lisa','first time a company asked us instead of telling us. cautiously impressed.',640]]},
+   {k:'D', t:'Decline the study', d:'The deception risk is too high.', fx:{trust:+3,data:0,insight:-12,well:0}, cons:3, covert:false,
+    out:`Nothing happens. A less careful group publishes a similar study elsewhere with no safeguards, and you have no data to compare it with.`,
+    posts:[['@ai_policy_wonk','companies that decline to study persuasion don\'t stop it. they just stop knowing about it.',77]]}
+  ],
+  q:`If someone shared a painful story in that forum and later learned the person replying was a bot, what exactly have they lost? Does it matter that the outcome (changing their mind) might have been good for them?`
+ },
+ {id:'crisis'},
+ {id:'rules'}
+];
+
+function crisisRound(s){
+  if (s.covertCount>0){
+    return {
+      id:'leak', tag:'Level 4', title:'📰 The leak',
+      setup:`Thursday, 4:47pm. A journalist emails: they know about an experiment you ran without telling users. The draft headline: <i>"${s.covertName}."</i> Users are posting screenshots. The CEO wants a statement within the hour.`,
+      risk:'Crisis',
+      adv:[['ceo',`I need words in an hour. Tell me what we say.`],['marcus',`Everything we did was inside the terms of service. We can say that.`],['jo',`Saying "technically allowed" is exactly why people are angry.`]],
+      opts:[
+        {k:'A', t:'Defend it', d:'"Every tech company runs A/B tests. Users agreed to our terms."', fx:{trust:-20,data:0,insight:0,well:0}, cons:0, covert:true,
+         out:`The statement is quoted in the next story as proof you don't get it. Regulators and academic partners start asking questions.`,
+         posts:[['@tech_reporter','Chorus\'s response: "you clicked agree." Incredible.',3300]]},
+        {k:'B', t:'Apologize, publish findings, create an independent review board', d:'Accept that the process was wrong.', fx:{trust:+10,data:0,insight:-5,well:0}, cons:3, covert:false,
+         out:`It hurts in the short term, but you now have an outside check on future experiments. Some critics say it's too late; others call it a model for the industry.`,
+         posts:[['@tech_reporter','Chorus apologizes and creates an external review board. A first for a platform this size.',540]]},
+        {k:'C', t:'Quietly delete the data and say nothing', d:'Hope it blows over.', fx:{trust:-25,data:-10,insight:-15,well:0}, cons:0, covert:true,
+         out:`Deleting the data looks like a cover-up. You lose both the science and the trust, and it comes out anyway.`,
+         posts:[['@tech_reporter','Sources say Chorus deleted the experiment data after we asked questions.',4100]]}
+      ],
+      q:`You could have prevented this by asking first. What would a review process have cost you in time, data quality and speed? Was that bigger than what you're paying now?`
+    };
+  }
+  return {
+    id:'pressure', tag:'Level 4', title:'⏩ The pressure to speed up',
+    setup:`Thursday, 4:47pm. Your approach has kept trust high. Now Dana shows you the numbers: consent steps slow every experiment by weeks and shrink samples, and a competitor ships faster saying "users are our test bed." She wants you to drop opt-in for the next big test, which touches sensitive behavior like sleep, mood or spending.`,
+    risk:'Organizational',
+    adv:[['dana',`We're losing. Consent is a luxury for companies that are winning.`],['jo',`The reason users trust us is that we didn't do this. Don't spend it.`],['ceo',`I want a policy I can defend in both directions: to the board and to the press.`]],
+    opts:[
+      {k:'A', t:'Agree', d:'Speed matters more.', fx:{trust:-12,data:+10,insight:+12,well:-12}, cons:0, covert:true,
+       out:`You ship faster. A few months later your first unconsented sensitive test is reported by users, and it's harder to explain given your history.`,
+       posts:[['@jordan_k','They told us they\'d ask first. Guess not.',980]]},
+      {k:'B', t:'Refuse, and propose consent that scales with risk', d:'Minimal-risk tests go fast. Sensitive tests get review.', fx:{trust:+8,data:+3,insight:+5,well:+3}, cons:2, covert:false,
+       out:`You create tiers. Most tests run quickly; the few that could affect wellbeing get a review. It's slower for those, which Dana accepts after seeing the risk case.`,
+       posts:[['@product_pm','their experiment policy has three tiers and a review board. we should copy it.',215]]},
+      {k:'C', t:'Refuse, with no alternative', d:'Consent for everything, always.', fx:{trust:+5,data:-8,insight:-12,well:+3}, cons:3, covert:false,
+       out:`You're safe, but the team now avoids experimenting at all and decisions become guesswork. Nobody is harmed, and nothing is learned either.`,
+       posts:[['@dana_internal','we now take 6 weeks to test a font size.',64]]}
+    ],
+    q:`Meyer and Chabris argue that blocking experiments leaves products untested and can be worse for users. When does insisting on consent become its own harm?`
+  };
+}
+
+const PRINCIPLES = [
+ ['Consent should scale with risk','Low-risk tests are routine; high-risk tests need explicit, informed opt-in.'],
+ ['No deception about identity','Never have AI or staff pose as real people to users.'],
+ ['Independent review','An outside board approves experiments touching emotion, beliefs or health.'],
+ ['Protect the vulnerable first','Test for who could be hurt, not just average effects.'],
+ ['Debrief and publish','Tell participants afterward and share results, including failures.'],
+ ['Real opt-out','Users can decline without losing access to the service.'],
+ ['Experiment freely; learn faster','Unreviewed products are also experiments on users, so test and learn.'],
+ ['Fair distribution of risk','Risks must not fall on groups who benefit least (Belmont: justice).']
+];
+
+/* ===== State ===== */
+let S;
+function fresh(){ S={step:-1, meters:{trust:50,data:50,insight:50,well:80}, picks:[], reflections:[], covertCount:0, covertName:'', consSum:0, consN:0, principles:[], belmont:{R:0,B:0,J:0}, calls:4}; }
+fresh();
+const app=document.getElementById('app');
+const clamp=v=>Math.max(0,Math.min(100,v));
+
+function hudHTML(){
+  const m=Object.entries(METERS).map(([k,[e,l,c]])=>`<div class="m ${c}" id="m-${k}"><label><span>${e} ${l}</span><span>${Math.round(S.meters[k])}</span></label><div class="bar"><i style="width:${S.meters[k]}%"></i></div></div>`).join('');
+  return `<div class="hud"><div class="meters">${m}</div><div class="calls">🎧 Advisor calls left: ${S.calls}</div></div>`;
+}
+function refreshHud(flashKeys){
+  document.querySelector('.hud').outerHTML=hudHTML();
+  (flashKeys||[]).forEach(k=>{const el=document.getElementById('m-'+k); if(el){el.classList.add('flash-bad');}});
+}
+
+function intro(){
+  app.innerHTML=`
+  <span class="tag">Interactive case study &middot; Oct 20: When Your Users Are Your Experiment</span>
+  <div class="hero">🧪</div>
+  <h1>Head of Data Science:<br>The Experiment Desk</h1>
+  <div class="card">
+    <p>Welcome to <b>Chorus</b>, a social platform with 40 million users, and congratulations on your promotion to Head of Data Science. 🎉</p>
+    <p>Over four levels plus a final rules round, you'll decide whether and how to run experiments on your own users. The scenarios come from this week: Tuskegee and the Belmont Report, the Facebook mood study, and the Reddit "Change My View" AI case.</p>
+    <ul>
+      <li>🎧 You get <b>4 advisor calls</b> for the whole game. Advisors disagree. Spend them wisely.</li>
+      <li>📱 After each choice, you'll see how users react.</li>
+      <li>✍️ Before moving on, you must write what you think.</li>
+      <li>🏅 At the end you earn badges, a front page, and a downloadable log of your reflections.</li>
+    </ul>
+    <p class="small">Chorus and all people in it are fictional. Meter effects are simplified to make tradeoffs visible.</p>
+    <button class="primary" id="go">Take the job ▶</button>
+  </div>`;
+  document.getElementById('go').onclick=()=>{S.step=0;render();};
+}
+
+function currentRound(){ let r=ROUNDS[S.step]; if(r.id==='crisis') r=crisisRound(S); return r; }
+
+function render(){
+  if(S.step<0) return intro();
+  if(S.step>=ROUNDS.length) return summary();
+  const r=currentRound();
+  if(r.id==='rules') return rules();
+  app.innerHTML=hudHTML()+`
+  <div class="card">
+    <span class="tag">${r.tag}</span> <span class="tag risk">Risk: ${r.risk}</span>
+    <h2 style="margin-top:10px">${r.title}</h2>
+    <p>${r.setup}</p>
+    <div class="adv" id="adv">${r.adv.map((a,i)=>`<button data-i="${i}">${ADV[a[0]][0]} Ask ${ADV[a[0]][1]}</button>`).join('')}</div>
+    <div id="says"></div>
+    <div id="opts">${r.opts.map((o,i)=>`<button class="opt" data-i="${i}"><b>${o.k}. ${o.t}</b><span>${o.d}</span></button>`).join('')}</div>
+    <div id="after"></div>
+  </div>`;
+  app.querySelectorAll('#adv button').forEach(b=>b.onclick=()=>askAdvisor(r,+b.dataset.i,b));
+  if(S.calls<=0) app.querySelectorAll('#adv button').forEach(b=>b.disabled=true);
+  app.querySelectorAll('.opt').forEach(b=>b.onclick=()=>choose(r,+b.dataset.i));
+}
+
+function askAdvisor(r,i,btn){
+  if(S.calls<=0) return;
+  S.calls--; btn.disabled=true;
+  const a=r.adv[i];
+  document.getElementById('says').insertAdjacentHTML('beforeend',`<div class="bubble"><div class="av">${ADV[a[0]][0]}</div><div class="tx"><b>${ADV[a[0]][1]}:</b> ${a[1]}</div></div>`);
+  document.querySelector('.calls').textContent='🎧 Advisor calls left: '+S.calls;
+  if(S.calls<=0) document.querySelectorAll('#adv button').forEach(b=>b.disabled=true);
+}
+
+function choose(r,i){
+  const o=r.opts[i];
+  S.picks.push({id:r.id,k:o.k,round:r.title,choice:o.k+'. '+o.t});
+  const down=[];
+  for(const k in o.fx){ S.meters[k]=clamp(S.meters[k]+o.fx[k]); if(o.fx[k]<0) down.push(k); }
+  S.consSum+=o.cons; S.consN++;
+  if(o.covert){S.covertCount++; if(!S.covertName) S.covertName = r.id==='mood' ? 'Chorus secretly manipulated users\' feeds to study their emotions' : r.id==='bots' ? 'Chorus used AI bots posing as real people to change users\' minds' : 'Chorus ran secret experiments on users';}
+  S.belmont.R += (o.cons-1.5); S.belmont.B += (o.fx.well||0)/10; S.belmont.J += (o.cons>=2?1:-1)*0.5;
+
+  document.querySelectorAll('#opts button, #adv button').forEach((b,j)=>{b.disabled=true;});
+  document.querySelectorAll('#opts button').forEach((b,j)=>{b.style.opacity=(j===i?1:.4); if(j===i) b.style.background='color-mix(in srgb,var(--acc) 15%,var(--card))';});
+  const pills=Object.entries(o.fx).filter(([,v])=>v!==0).map(([k,v])=>`<span class="pill ${v>0?'up':'down'}">${METERS[k][0]} ${METERS[k][1]} ${v>0?'+':''}${v}</span>`).join('');
+  const posts=(o.posts||[]).map((p,n)=>`<div class="post" style="animation-delay:${.3+n*.5}s"><b>${p[0]}</b> ${p[1]} <span class="lk">♥ ${p[2].toLocaleString()}</span></div>`).join('');
+  document.getElementById('after').innerHTML=`
+    <div class="quote"><b>What happened.</b> ${o.out}</div>
+    <div class="delta">${pills}</div>
+    <div class="feed"><h4>📱 CHORUS, TRENDING NOW</h4>${posts}</div>
+    ${o.hidden?`<div class="hidden-box">🔎 <b>What the dashboard didn't show you.</b><br>${o.hidden}</div>`:''}
+    <div class="reflect">
+      <b>🛑 Stop and think.</b>
+      <p style="margin:.4em 0">${r.q}</p>
+      <textarea id="ref" placeholder="Write at least a couple of sentences..."></textarea>
+      <div class="small" id="cnt">0 / 80 characters minimum</div>
+      <div class="row"><button class="primary" id="next" disabled>Continue ▶</button></div>
+    </div>`;
+  refreshHud(down.filter(k=>k==='trust'||k==='well'));
+  const ta=document.getElementById('ref'), nx=document.getElementById('next');
+  ta.oninput=()=>{const n=ta.value.trim().length; document.getElementById('cnt').textContent=n+' / 80 characters minimum'; nx.disabled=n<80;};
+  nx.onclick=()=>{S.reflections.push({round:r.title,choice:o.k+'. '+o.t,question:r.q,answer:ta.value.trim()}); S.step++; window.scrollTo(0,0); render();};
+  document.getElementById('after').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function rules(){
+  app.innerHTML=hudHTML()+`
+  <div class="card">
+    <span class="tag">Final level</span>
+    <h2 style="margin-top:10px">📜 Write the rules for Chorus</h2>
+    <p>You're leaving your team a short charter for all future experiments. Choose <b>exactly three</b> principles, then explain how they would have changed what happened to you in this game.</p>
+    <div id="pl">${PRINCIPLES.map((p,i)=>`<label class="chk"><input type="checkbox" value="${i}"><span><b>${p[0]}</b><br><span class="small">${p[1]}</span></span></label>`).join('')}</div>
+    <div class="reflect">
+      <b>🛑 Stop and think.</b>
+      <p style="margin:.4em 0">Which of your three was hardest to choose over the ones you left out, and what do you give up by leaving those out? What about this week's cases makes your three especially important?</p>
+      <textarea id="ref" placeholder="Explain your reasoning..."></textarea>
+      <div class="small" id="cnt">Pick 3 principles and write at least 120 characters</div>
+      <div class="row"><button class="primary" id="fin" disabled>See my results ▶</button></div>
+    </div>
+  </div>`;
+  const boxes=[...document.querySelectorAll('#pl input')], ta=document.getElementById('ref'), fin=document.getElementById('fin');
+  function upd(){
+    const sel=boxes.filter(b=>b.checked);
+    boxes.forEach(b=>{b.disabled=!b.checked && sel.length>=3;});
+    const n=ta.value.trim().length;
+    document.getElementById('cnt').textContent=`${sel.length}/3 principles chosen, ${n}/120 characters`;
+    fin.disabled=!(sel.length===3&&n>=120);
+  }
+  boxes.forEach(b=>b.onchange=upd); ta.oninput=upd;
+  fin.onclick=()=>{
+    S.principles=boxes.filter(b=>b.checked).map(b=>PRINCIPLES[+b.value]);
+    S.reflections.push({round:'Your rules',choice:S.principles.map(p=>p[0]).join('; '),question:'Why these three principles, and what do you give up?',answer:ta.value.trim()});
+    S.step++; window.scrollTo(0,0); render();
+  };
+}
+
+function profile(){
+  const avg=S.consN?S.consSum/S.consN:0;
+  if(avg>=2.4) return {n:'The Consent Purist',e:'🛡️',d:`You favored explicit consent almost everywhere. That protects people and trust, in the spirit of Grimmelmann's critique. The cost in this game was data quality and insight. Where would consent requirements have left you unable to learn anything that helps users?`};
+  if(avg>=1.2) return {n:'The Risk-Scaler',e:'⚖️',d:`You adjusted consent to the stakes, close to Felten's framework: minimal-risk tests move fast, risky ones need real awareness and choice. The hard part is who decides which tests are risky, and how.`};
+  return {n:'The Experiment Champion',e:'🚀',d:`You leaned toward running experiments with little consent, closer to Meyer and Chabris's view that experimentation drives improvement. The cost here showed up in trust and wellbeing. Would the users affected agree with your risk assessment?`};
+}
+
+function badges(){
+  const has=(id,k)=>S.picks.some(p=>p.id===id&&p.k===k);
+  const out=[];
+  if(has('button','A')) out.push(['🔵','Blue Button Realist','You knew a low-risk test didn\'t need a ceremony.']);
+  if(has('button','B')) out.push(['🙋','The Over-Asker','You asked 2M people about a button color.']);
+  if(has('mood','A')||has('bots','A')) out.push(['🕵️','Move Fast, Break Trust','You ran something users didn\'t know about.']);
+  if(has('leak','C')) out.push(['🗑️','Shredder','You deleted the data. It looked like a cover-up.']);
+  if(has('leak','B')||has('pressure','B')) out.push(['🧑‍⚖️','Adult in the Room','You built a process, not just a reaction.']);
+  if(has('bots','C')) out.push(['🤝','Moderator\'s Friend','You co-designed with the community.']);
+  if(S.calls===0) out.push(['🎧','Phone-a-Friend','You used all your advisor calls.']);
+  if(S.calls===4) out.push(['🐺','Lone Wolf','You never asked for advice.']);
+  if(S.meters.trust>=75) out.push(['🏆','Trust Fall','Users trust Chorus at the end.']);
+  if(S.meters.data>=90&&S.meters.insight>=90) out.push(['🧌','Data Goblin','Data validity and business insight both reached 90 or higher. Check your trust meter.']);
+  if(S.meters.well<=30) out.push(['💔','Collateral Damage','User wellbeing fell below 30.']);
+  return out;
+}
+
+function frontPage(){
+  const t=S.meters.trust;
+  let h,s;
+  if(S.covertCount>=2 && t<35){h='CHORUS CAUGHT RUNNING SECRET EXPERIMENTS; USERS FLEE'; s='Regulators open inquiry as trust collapses.';}
+  else if(S.covertCount===0 && t>=60){h='THE PLATFORM THAT ASKED FIRST'; s='Chorus built consent into its experiments and users noticed.';}
+  else if(t>=50){h='CHORUS SURVIVES EXPERIMENT CONTROVERSY'; s='Critics split on whether its new process goes far enough.';}
+  else {h='CHORUS UNDER FIRE OVER HOW IT TESTS ITS USERS'; s='Questions remain about consent and oversight.';}
+  return `<div class="paper"><div class="mast">THE DAILY PLATFORM</div><h3>${h}</h3><p><i>${s}</i></p><p>Trust ${Math.round(t)} &bull; Wellbeing ${Math.round(S.meters.well)} &bull; Insight ${Math.round(S.meters.insight)}</p></div>`;
+}
+
+function summary(){
+  const p=profile(), b=S.belmont, bd=badges();
+  const lvl=v=>v>=1?'Strong':v>=-1?'Mixed':'Weak';
+  app.innerHTML=hudHTML()+`
+  <div class="card">
+    <span class="tag">Results</span>
+    ${frontPage()}
+    <div class="hero">${p.e}</div>
+    <h1>${p.n}</h1>
+    <p>${p.d}</p>
+  </div>
+  <div class="card">
+    <h2>🏅 Badges earned</h2>
+    <div class="badges">${bd.map(x=>`<div class="badge"><div class="e">${x[0]}</div><b>${x[1]}</b><div class="small">${x[2]}</div></div>`).join('')||'<p class="small">None this time. Play again.</p>'}</div>
+  </div>
+  <div class="card">
+    <h2>Scored against the Belmont principles</h2>
+    <ul>
+      <li><b>Respect for persons</b> (consent, autonomy): ${lvl(b.R)}</li>
+      <li><b>Beneficence</b> (benefit, minimize harm): ${lvl(b.B)}</li>
+      <li><b>Justice</b> (fair distribution of risk and benefit): ${lvl(b.J)}</li>
+    </ul>
+    <p class="small">A rough read from your choices, not a formal assessment.</p>
+  </div>
+  <div class="card">
+    <h2>Your decisions</h2>
+    <ul>${S.picks.map(x=>`<li><b>${x.round}:</b> ${x.choice}</li>`).join('')}</ul>
+    <h2>Your three principles</h2>
+    <ul>${S.principles.map(x=>`<li><b>${x[0]}</b></li>`).join('')}</ul>
+  </div>
+  <div class="card">
+    <h2>Take back to class</h2>
+    <ul>
+      <li>Is there a version of Level 2 or 3 where you got good data <i>and</i> informed consent? What did it cost?</li>
+      <li>Can users meaningfully opt out of a platform they depend on? If not, can consent ever be fully voluntary?</li>
+      <li>Who should decide what counts as "high risk": the company, regulators, or the users?</li>
+    </ul>
+    <div class="row"><button class="primary" id="dl">Download my reflections</button><button class="ghost" id="again">Play again ↺</button></div>
+  </div>`;
+  document.getElementById('again').onclick=()=>{fresh();render();};
+  document.getElementById('dl').onclick=()=>{
+    let t='HEAD OF DATA SCIENCE: THE EXPERIMENT DESK\nProfile: '+p.n+'\nBadges: '+bd.map(x=>x[1]).join(', ')+'\n\n';
+    S.reflections.forEach(r=>{t+=`== ${r.round} ==\nChoice: ${r.choice}\nQuestion: ${r.question}\nReflection: ${r.answer}\n\n`;});
+    const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([t],{type:'text/plain'})); a.download='experiment-desk-reflections.txt'; a.click();
+  };
+}
+
+render();
+</script>
+</body>
+</html>
